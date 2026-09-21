@@ -106,13 +106,16 @@ header {
 .board-container .move-btn:hover {
   background-color: blue;
   color: white;
-  transform: translate(10px);
+  transform: translateX(-10px);
 }
 
 .no-task {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 18px;
   font-weight: 600;
-  text-align: center;
-  transform: rotate(-90deg);
   margin: 150px 10px;
 }

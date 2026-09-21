@@ -1,27 +1,12 @@
-let tasks = [{
-  id: Date.now(),
-  title: 'aman',
-  priority: 'high',
-  status: 'todo',
-}]
+// App state
 
-tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-function onLoad() {
-  if(!tasks || !tasks.length) return alert('There is no tasks.');
-  renderBoard();
-}
+let tasks = [];
 
-onLoad();
+function saveTasks() {
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+};
 
-const taskForm = document.getElementById('task-form');
-const taskInput = document.getElementById('task-input');
-taskForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const title = taskInput.value.trim();
-  if(!title) return alert('Task title cannot be empty.');
-  createTask(title);
-  taskForm.reset();
-});
+// Data logic
 
 function createTask(title) {
   const newTask = {
@@ -31,13 +16,36 @@ function createTask(title) {
     status: 'todo',
   };
   tasks.unshift(newTask);
-  localStorage.setItem('tasks', JSON.stringify(tasks));
+  saveTasks();
   renderBoard();
 }
 
+function deleteTask(id) {
+  tasks = tasks.filter((task) => task.id != id);
+  saveTasks();
+  renderBoard();
+}
+
+function moveTask(id) {
+  const task = tasks.find((task) => task.id === id);
+  if(!task) return;
+
+  if(task.status === 'todo') task.status = 'in-progress';
+  else if(task.status === 'in-progress') task.status = 'completed';
+  else if(task.status === 'completed') task.status = 'in-progress';
+
+  saveTasks();
+  renderBoard();
+}
+
+// UI logic
+
 function renderColumns(status, columnSelector) {
   const container = document.querySelector(columnSelector);
+  if(!container) return;
+
   const filteredTasks = tasks.filter(task => task.status === status);
+
   if(!filteredTasks || !filteredTasks.length) return container.innerHTML = `<p class="no-task"> There is no ${status} tasks.`;
 
   container.innerHTML = filteredTasks.map((task) => 
@@ -45,8 +53,8 @@ function renderColumns(status, columnSelector) {
       <div class="kanban-card" data-id="${task.id}">
         <h3>${task.title}</h3>
         <p>Priority: ${task.priority}</p>
-        <button class="delete-btn" onclick="deleteTask(${task.id})">X</button>
-        <button class="move-btn" onclick="moveTask(${task.id}, '${status}')">>></button>
+        <button class="delete-btn"">X</button>
+        <button class="move-btn">${task.status !== 'completed' ? '>>' : '<<'}</button>
       </div>
     `
   ).join('');
@@ -58,17 +66,54 @@ function renderBoard() {
   renderColumns('completed', '#completed-cards');
 }
 
-function deleteTask(id) {
-  tasks = tasks.filter((task) => task.id != id);
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-  renderBoard();
+
+// Event handlers
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+
+  const taskInput = document.getElementById('task-input');
+  const title = taskInput.value.trim();
+
+  if(!title) return alert('Task title cannot be empty.');
+
+  createTask(title);
+  e.target.reset();
 }
 
-function moveTask(id) {
-  const task = tasks.find((task) => task.id === id);
-  if(task.status === 'todo') task.status = 'in-progress';
-  else if(task.status === 'in-progress') task.status = 'completed';
-  else console.log("this is last column");
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-  renderBoard();
+function handleBoardClick(e) {
+  const isDeleteBtn = e.target.classList.contains('delete-btn');
+  const isMoveBtn = e.target.classList.contains('move-btn');
+  if(!isDeleteBtn && !isMoveBtn) return;
+
+  const card = e.target.closest('.kanban-card');
+  if(!card) return;
+
+  const taskId = Number(card.dataset.id);
+
+  if(isDeleteBtn) {
+    deleteTask(taskId);
+  } else if(isMoveBtn) {
+    moveTask(taskId);
+  }
 }
+
+// Initializaton
+
+function setUpEventListeners() {
+  const taskForm = document.getElementById('task-form');
+  const boardContainer = document.querySelector('.board-container');
+
+  if(taskForm) taskForm.addEventListener('submit', handleFormSubmit);
+  if(boardContainer) boardContainer.addEventListener('click', handleBoardClick);
+}
+
+function initApp() {
+  tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+  renderBoard();
+
+  setUpEventListeners();
+}
+
+initApp();
